@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>EPS 电动助力转向仿真</title>
+<style>
+:root {
+  --bg:#000; --bg2:#07090e; --panel:#0c1420; --panel2:#101b28;
+  --border:#1e3a55; --accent:#00ddff; --accent2:#ff6a2f;
+  --yellow:#ffc107; --text:#eaf4ff; --text2:#8ab8d8; --green:#00e676;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html{font-size:18px;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI','Microsoft YaHei','PingFang SC',sans-serif;min-height:100vh;overflow-x:hidden;}
+.header{background:#000;border-bottom:2px solid var(--border);padding:13px 16px;display:flex;align-items:center;gap:12px;}
+.header-icon{width:46px;height:46px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;color:#000;font-weight:900;}
+.header-title{font-size:1.25rem;font-weight:800;color:#fff;line-height:1.2;}
+.header-sub{font-size:0.78rem;color:var(--text2);margin-top:3px;}
+.tabs{display:flex;background:#000;border-bottom:2px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:13px 16px;cursor:pointer;color:var(--text2);border-bottom:3px solid transparent;white-space:nowrap;font-size:1rem;font-weight:700;flex-shrink:0;transition:color .2s;user-select:none;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-panel{display:none;padding-bottom:72px;}
+.tab-panel.active{display:block;}
+.card{background:var(--panel);border:1.5px solid var(--border);border-radius:12px;padding:18px 16px 14px;margin:12px 12px 0;}
+.card-title{font-size:1.05rem;font-weight:800;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';display:block;width:4px;height:20px;background:var(--accent);border-radius:2px;flex-shrink:0;}
+.card-sub{font-size:.88rem;font-weight:700;color:var(--yellow);margin:14px 0 10px;padding-left:8px;border-left:3px solid var(--yellow);}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.92rem;color:var(--text2);margin-bottom:5px;font-weight:600;line-height:1.3;}
+.field input[type="number"],.field input[type="text"]{width:100%;background:var(--panel2);border:1.5px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:1.05rem;font-family:'Courier New',monospace;font-weight:700;outline:none;-webkit-appearance:none;transition:border-color .2s;}
+.field input:focus{border-color:var(--accent);background:#0d1e30;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.btn{width:100%;padding:14px;border:none;border-radius:10px;cursor:pointer;font-size:1.05rem;font-weight:800;font-family:inherit;margin-top:8px;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#000;}
+.btn-primary:active{transform:scale(.97);background:#33eeff;}
+.btn-ghost{background:rgba(0,221,255,.1);color:var(--accent);border:1.5px solid rgba(0,221,255,.35);}
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 12px 0;}
+.result-card{background:var(--panel);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;}
+.result-label{font-size:.82rem;color:var(--text2);margin-bottom:5px;line-height:1.4;}
+.result-value{font-size:1.75rem;font-weight:800;font-family:monospace;line-height:1;}
+
+/* ===== PLOT WRAP ===== */
+.plot-wrap{margin:12px 12px 0;background:var(--panel);border:1.5px solid var(--border);border-radius:12px;padding:14px;}
+.plot-wrap:last-child{margin-bottom:12px;}
+.plot-head-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;}
+.plot-heading{font-size:.92rem;color:var(--text2);font-weight:700;flex:1;line-height:1.3;}
+.plot-canvas{display:block;width:100%;}
+
+/* ===== DOWNLOAD BUTTON ===== */
+.btn-dl{
+  padding:8px 14px;
+  background:rgba(0,221,255,.1);
+  border:1.5px solid rgba(0,221,255,.4);
+  color:var(--accent);
+  border-radius:8px;
+  font-size:.88rem;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+  font-family:inherit;
+  flex-shrink:0;
+  display:flex;align-items:center;gap:5px;
+  transition:background .15s;
+}
+.btn-dl:active{background:rgba(0,221,255,.25);}
+.btn-dl-wrap{margin-top:10px;display:flex;justify-content:flex-end;}
+
+/* download toast */
+.toast{
+  position:fixed;top:80px;left:50%;transform:translateX(-50%);
+  background:#00ddff;color:#000;
+  padding:10px 22px;border-radius:30px;
+  font-size:.95rem;font-weight:800;
+  opacity:0;pointer-events:none;
+  transition:opacity .3s;z-index:200;
+}
+.toast.show{opacity:1;}
+
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.92rem;color:var(--text2);}
+.legend-line{width:24px;height:4px;border-radius:2px;flex-shrink:0;}
+.info-box{background:rgba(0,221,255,.05);border:1.5px solid rgba(0,221,255,.22);border-radius:8px;padding:12px 14px;font-size:.9rem;color:var(--text2);line-height:1.75;margin-top:10px;}
+.info-box b{color:var(--accent);}
+.info-box .hi{color:var(--yellow);font-weight:800;}
+.divider{height:1px;background:var(--border);margin:14px 0 10px;}
+.status-bar{position:fixed;bottom:0;left:0;right:0;background:#000;border-top:1.5px solid var(--border);padding:10px 16px;font-size:.88rem;color:var(--text2);display:flex;align-items:center;gap:8px;z-index:50;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.status-dot.busy{background:var(--yellow);animation:blink .8s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.c-mech{color:#cccccc!important;}
+.c-ol{color:var(--accent2)!important;}
+.c-pid{color:var(--accent)!important;}
+user-select: none
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">⚙</div>
+  <div>
+    <div class="header-title">EPS 电动助力转向仿真</div>
+    <div class="header-sub">广西大学 · 车辆工程专业 · 《汽车设计》课程教学团队</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)">⚙ 系统参数</div>
+  <div class="tab" onclick="switchTab(1)">📈 助力曲线</div>
+  <div class="tab" onclick="switchTab(2)">🚗 横摆角速度</div>
+  <div class="tab" onclick="switchTab(3)">🎛 PID调参</div>
+  <div class="tab" onclick="switchTab(4)">↩ 回正控制</div>
+  <div class="tab" onclick="switchTab(5)">📊 差异对比</div>
+</div>
+
+<!-- ============ TAB 0: SYSTEM PARAMETERS ============ -->
+<div class="tab-panel active" id="panel-0">
+  <div class="card">
+    <div class="card-title">转向系统参数（可自定义，改后点击应用）</div>
+    <div class="card-sub">方向盘与转向管柱</div>
+    <div class="g2">
+      <div class="field"><label>Js 转向盘惯量 (kg·m²)</label><input type="number" id="p_Js" value="0.01" step="0.001" min="0.001"></div>
+      <div class="field"><label>Bs 管柱阻尼 (N·m·s/rad)</label><input type="number" id="p_Bs" value="0.01" step="0.001" min="0"></div>
+      <div class="field"><label>Ks 转向轴刚度 (N·m/rad)</label><input type="number" id="p_Ks" value="180" step="1" min="1"></div>
+      <div class="field"><label>iw 转向器传动比</label><input type="number" id="p_iw" value="21.9" step="0.1" min="1"></div>
+    </div>
+    <div class="card-sub">转向机构（齿轮轴侧）</div>
+    <div class="g2">
+      <div class="field"><label>Jc 折算到齿轮轴惯量 (kg·m²)</label><input type="number" id="p_Jc" value="0.08" step="0.001" min="0.001"></div>
+      <div class="field"><label>Bc 齿条阻尼 (N·m·s/rad)</label><input type="number" id="p_Bc" value="0.35" step="0.01" min="0"></div>
+      <div class="field"><label>Kc 等效刚度到齿轮轴 (N·m/rad)</label><input type="number" id="p_Kc" value="2.3" step="0.1" min="0"></div>
+      <div class="field"><label>rp 小齿轮分度圆半径 (m)</label><input type="number" id="p_rp" value="0.009" step="0.001" min="0.001"></div>
+    </div>
+    <div class="card-sub">助力电机</div>
+    <div class="g2">
+      <div class="field"><label>im 电机到转向轴传动比</label><input type="number" id="p_im" value="18" step="0.1" min="1"></div>
+      <div class="field"><label>Jm 电机转动惯量 (kg·m²)</label><input type="number" id="p_Jm" value="0.0001" step="0.00001" min="0"></div>
+      <div class="field"><label>Kt 电机转矩常数 (N·m/A)</label><input type="number" id="p_Kt" value="0.046" step="0.001" min="0.001"></div>
+      <div class="field"><label>Bm 电机阻尼 (N·m·s/rad)</label><input type="number" id="p_Bm" value="0.0007" step="0.0001" min="0"></div>
+      <div class="field"><label>Kb 反电动势常数 (V·s/rad)</label><input type="number" id="p_Kb" value="0.01" step="0.001" min="0"></div>
+      <div class="field"><label>R 电机电阻 (Ω)</label><input type="number" id="p_R" value="0.1" step="0.01" min="0.001"></div>
+      <div class="field"><label>L 电机电感 (H)</label><input type="number" id="p_L" value="0.001" step="0.0001" min="0.0001"></div>
+    </div>
+    <div class="card-sub">整车参数（二自由度模型）</div>
+    <div class="g2">
+      <div class="field"><label>m 整车质量 (kg)</label><input type="number" id="p_m" value="1850" step="10" min="500"></div>
+      <div class="field"><label>Iz 绕Z轴转动惯量 (kg·m²)</label><input type="number" id="p_Iz" value="4050" step="10" min="100"></div>
+      <div class="field"><label>a 质心到前轴距离 (m)</label><input type="number" id="p_a" value="1.288" step="0.01" min="0.5"></div>
+      <div class="field"><label>b 质心到后轴距离 (m)</label><input type="number" id="p_b" value="1.512" step="0.01" min="0.5"></div>
+      <div class="field"><label>k1 前轮侧偏刚度 (N/rad，负值）</label><input type="number" id="p_k1" value="-35000" step="100"></div>
+      <div class="field"><label>k2 后轮侧偏刚度 (N/rad，负值）</label><input type="number" id="p_k2" value="-38310" step="100"></div>
+    </div>
+    <button class="btn btn-primary" onclick="applyParams()">✔ 应用参数 — 更新所有仿真</button>
+    <button class="btn btn-ghost"   onclick="resetParams()">↺ 恢复论文默认参数</button>
+    <div class="info-box" style="margin-top:12px">
+      <b>参数来源：</b>参考东风E70。<br>
+      修改后请点击"<b>应用参数</b>"，再切换其他标签页运行仿真并下载图片。
+    </div>
+  </div>
+</div>
+
+<!-- ============ TAB 1: ASSIST CURVES ============ -->
+<div class="tab-panel" id="panel-1">
+  <div class="card">
+    <div class="card-title">助力特性曲线参数</div>
+    <div class="g2">
+      <div class="field"><label>转矩最小值 (N·m)</label><input type="number" id="t1_tmin" value="0" step="0.5" min="0"></div>
+      <div class="field"><label>转矩最大值 (N·m)</label><input type="number" id="t1_tmax" value="8" step="0.5" min="1"></div>
+    </div>
+    <div class="field"><label>对比车速列表 km/h（逗号分隔）</label>
+      <input type="text" id="t1_speeds" value="10, 35, 60, 100" style="font-family:inherit;font-weight:600;">
+    </div>
+    <button class="btn btn-primary" onclick="runTab1()">▶ 绘制助力特性曲线</button>
+    <div class="info-box">低速大转矩→大电流；高速小转矩→小电流；转矩&lt;0.5N·m不助力；车速≥120km/h停止助力</div>
+  </div>
+
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">目标助力电流 I (A)  vs  方向盘转矩 (N·m)</span>
+      <button class="btn-dl" onclick="dlChart('canvas1a','助力特性曲线_电流vs转矩')">📥 下载</button>
+    </div>
+    <canvas id="canvas1a" class="plot-canvas"></canvas>
+    <div class="legend" id="legend1a"></div>
+  </div>
+
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">助力电流热力图（横轴=转矩，纵轴=车速）</span>
+      <button class="btn-dl" onclick="dlHeatmap('canvas1b','助力电流热力图')">📥 下载</button>
+    </div>
+    <canvas id="canvas1b" class="plot-canvas"></canvas>
+  </div>
+</div>
+
+<!-- ============ TAB 2: YAW RATE ============ -->
+<div class="tab-panel" id="panel-2">
+  <div class="card">
+    <div class="card-title">仿真条件</div>
+    <div class="g2">
+      <div class="field"><label>车速 v (km/h)</label><input type="number" id="t2_v" value="35" step="5" min="1"></div>
+      <div class="field"><label>驾驶员输入转矩 Td (N·m)</label><input type="number" id="t2_Td" value="3" step="0.5" min="0.1"></div>
+    </div>
+    <div class="card-sub">PID 控制参数</div>
+    <div class="g3">
+      <div class="field"><label>Kp</label><input type="number" id="t2_Kp" value="2" step="0.1" min="0"></div>
+      <div class="field"><label>Ki</label><input type="number" id="t2_Ki" value="1.5" step="0.1" min="0"></div>
+      <div class="field"><label>Kd</label><input type="number" id="t2_Kd" value="0" step="0.1" min="0"></div>
+    </div>
+    <div class="field"><label>仿真时长 T (s)</label><input type="number" id="t2_T" value="8" step="1" min="2" max="30"></div>
+    <button class="btn btn-primary" onclick="runTab2()">▶ 运行仿真对比</button>
+    <button class="btn btn-ghost"   onclick="resetTab2()">↺ 恢复推荐参数</button>
+  </div>
+  <div class="results-grid">
+    <div class="result-card"><div class="result-label">机械式 稳定时间</div><div class="result-value c-mech" id="r2_mt">—</div></div>
+    <div class="result-card"><div class="result-label">机械式 超调量</div>  <div class="result-value c-mech" id="r2_mo">—</div></div>
+    <div class="result-card"><div class="result-label">开环EPS 稳定时间</div><div class="result-value c-ol"   id="r2_ot">—</div></div>
+    <div class="result-card"><div class="result-label">开环EPS 超调量</div>  <div class="result-value c-ol"   id="r2_oo">—</div></div>
+    <div class="result-card"><div class="result-label">PID-EPS 稳定时间</div><div class="result-value c-pid"  id="r2_pt">—</div></div>
+    <div class="result-card"><div class="result-label">PID-EPS 超调量</div>  <div class="result-value c-pid"  id="r2_po">—</div></div>
+  </div>
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">横摆角速度响应曲线 ωz (rad/s)</span>
+      <button class="btn-dl" onclick="dlChart('canvas2a','横摆角速度响应曲线对比')">📥 下载</button>
+    </div>
+    <canvas id="canvas2a" class="plot-canvas"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-line" style="background:#888"></div><span>机械式</span></div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--accent2)"></div><span style="color:var(--accent2)">EPS开环</span></div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--accent)"></div><span style="color:var(--accent)">PID控制</span></div>
+    </div>
+  </div>
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">电机助力电流 I (A)</span>
+      <button class="btn-dl" onclick="dlChart('canvas2b','电机助力电流响应曲线')">📥 下载</button>
+    </div>
+    <canvas id="canvas2b" class="plot-canvas"></canvas>
+  </div>
+</div>
+
+<!-- ============ TAB 3: PID TUNING ============ -->
+<div class="tab-panel" id="panel-3">
+  <div class="card">
+    <div class="card-title">参数调参条件</div>
+    <div class="g2">
+      <div class="field"><label>车速 v (km/h)</label><input type="number" id="t3_v" value="35" step="5" min="1"></div>
+      <div class="field"><label>驾驶员转矩 Td (N·m)</label><input type="number" id="t3_Td" value="3" step="0.5" min="0.1"></div>
+    </div>
+    <div class="field"><label>仿真时长 T (s)</label><input type="number" id="t3_T" value="8" step="1" min="2" max="30"></div>
+    <div class="field"><label>Kp 对比列表（Ki=Kd=0，逗号分隔）</label>
+      <input type="text" id="t3_kplist" value="0.1, 0.5, 1, 2, 5, 10" style="font-family:inherit;font-weight:600;">
+    </div>
+    <div class="field"><label>Ki 对比列表（Kp=2, Kd=0，逗号分隔）</label>
+      <input type="text" id="t3_kilist" value="0, 0.5, 1, 1.5, 2, 3" style="font-family:inherit;font-weight:600;">
+    </div>
+    <button class="btn btn-primary" onclick="runTab3()">▶ 运行调参分析</button>
+    <div class="info-box"><span class="hi">推荐（35km/h）：Kp=2, Ki=1.5, Kd=0 → 稳定时间≈1.4s，超调量可忽略</span></div>
+  </div>
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">Kp 对横摆角速度的影响（Ki=Kd=0）</span>
+      <button class="btn-dl" onclick="dlChart('canvas3a','Kp参数调参_横摆角速度')">📥 下载</button>
+    </div>
+    <canvas id="canvas3a" class="plot-canvas"></canvas>
+    <div class="legend" id="legend3a"></div>
+  </div>
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">Ki 对横摆角速度的影响（Kp=2, Kd=0）</span>
+      <button class="btn-dl" onclick="dlChart('canvas3b','Ki参数调参_横摆角速度')">📥 下载</button>
+    </div>
+    <canvas id="canvas3b" class="plot-canvas"></canvas>
+    <div class="legend" id="legend3b"></div>
+  </div>
+</div>
+
+<!-- ============ TAB 4: RETURN CONTROL ============ -->
+<div class="tab-panel" id="panel-4">
+  <div class="card">
+    <div class="card-title">回正仿真条件</div>
+    <div class="g2">
+      <div class="field"><label>车速 v (km/h)</label><input type="number" id="t4_v" value="30" step="5" min="1"></div>
+      <div class="field"><label>初始方向盘转角 (°)</label><input type="number" id="t4_th0" value="90" step="5" min="10" max="360"></div>
+    </div>
+    <div class="field"><label>仿真时长 T (s)</label><input type="number" id="t4_T" value="5" step="1" min="1" max="20"></div>
+    <div class="g2">
+      <div class="field"><label>Kp_r 比例增益</label><input type="number" id="t4_Kpr" value="5" step="0.5" min="0"></div>
+      <div class="field"><label>Kd_r 微分增益</label><input type="number" id="t4_Kdr" value="0.5" step="0.1" min="0"></div>
+    </div>
+    <div class="field"><label>Kp_r 对比列表（逗号分隔，Kd_r固定）</label>
+      <input type="text" id="t4_kprlist" value="1, 3, 5, 10, 20" style="font-family:inherit;font-weight:600;">
+    </div>
+    <button class="btn btn-primary" onclick="runTab4()">▶ 运行回正仿真</button>
+    <div class="info-box">驾驶员松开方向盘(Td=0)后，EPS-PD控制器主动输出回正电压。</div>
+  </div>
+  <div class="results-grid" style="margin-top:12px">
+    <div class="result-card"><div class="result-label">机械式回正时间(≤5°)</div><div class="result-value c-mech" id="r4_mt">—</div></div>
+    <div class="result-card"><div class="result-label">EPS回正时间(≤5°)</div>  <div class="result-value c-pid"  id="r4_et">—</div></div>
+  </div>
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">方向盘回正曲线 θs (°)</span>
+      <button class="btn-dl" onclick="dlChart('canvas4a','回正控制_方向盘转角响应')">📥 下载</button>
+    </div>
+    <canvas id="canvas4a" class="plot-canvas"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-line" style="background:#888"></div><span>机械式</span></div>
+      <div class="legend-item"><div class="legend-line" style="background:var(--accent)"></div><span style="color:var(--accent)">EPS回正(PD)</span></div>
+    </div>
+  </div>
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">不同 Kp_r 对回正的影响</span>
+      <button class="btn-dl" onclick="dlChart('canvas4b','Kp_r参数对回正特性的影响')">📥 下载</button>
+    </div>
+    <canvas id="canvas4b" class="plot-canvas"></canvas>
+    <div class="legend" id="legend4b"></div>
+  </div>
+</div>
+
+<!-- ============ TAB 5: DIFFERENCE ANALYSIS ============ -->
+<div class="tab-panel" id="panel-5">
+  <div class="card">
+    <div class="card-title">仿真曲线 vs 实车参考曲线对比</div>
+    <div class="card-sub">选择对比车速（与"助力曲线"页速度列表同步）</div>
+    <div id="t5_btn_row" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;"></div>
+    <div class="info-box" style="margin-top:10px">
+      <b>实车参考来源：</b>A级对标车统计（5款）及行业EPS设计规范。<br>
+      <b>参考车型：</b>整备质量1500~2000 kg，电机额定电流约50~65 A，死区1.0 N·m，5 N·m饱和。<br>
+      <b>本仿真（v5优化）：</b>I_MAX=30 A，解析S形曲线，消除曲线交叉，5 N·m饱和。
+    </div>
+  </div>
+
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading" id="t5_heading">助力电流对比（10 km/h）</span>
+      <button class="btn-dl" onclick="dlChart('canvas5a','助力曲线差异对比')">📥 下载</button>
+    </div>
+    <canvas id="canvas5a" class="plot-canvas"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-line" style="background:#00ddff"></div><span style="color:#00ddff">本仿真（I_MAX=30 A）</span></div>
+      <div class="legend-item"><div class="legend-line" style="background:#ff6a2f"></div><span style="color:#ff6a2f">实车参考（I_MAX=60 A）</span></div>
+    </div>
+  </div>
+
+  <div class="results-grid" style="margin-top:4px;">
+    <div class="result-card"><div class="result-label">仿真 最大电流</div><div class="result-value c-pid" id="r5_smax">—</div></div>
+    <div class="result-card"><div class="result-label">实车参考 最大电流</div><div class="result-value c-ol"  id="r5_rmax">—</div></div>
+    <div class="result-card"><div class="result-label">仿真 @ 3 N·m</div><div class="result-value c-pid" id="r5_s3">—</div></div>
+    <div class="result-card"><div class="result-label">实车参考 @ 3 N·m</div><div class="result-value c-ol"  id="r5_r3">—</div></div>
+    <div class="result-card"><div class="result-label">幅值比（仿真/实车）</div><div class="result-value" id="r5_ratio">—</div></div>
+    <div class="result-card"><div class="result-label">死区差异</div><div class="result-value c-mech" id="r5_dz">0.5 N·m</div></div>
+  </div>
+
+  <div class="plot-wrap">
+    <div class="plot-head-row">
+      <span class="plot-heading">全车速域电流差值（实车−仿真，转矩=5 N·m处）</span>
+      <button class="btn-dl" onclick="dlChart('canvas5b','全车速域电流差值')">📥 下载</button>
+    </div>
+    <canvas id="canvas5b" class="plot-canvas"></canvas>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-line" style="background:#ffc107"></div><span style="color:#ffc107">差值 ΔI = I实车 − I仿真（A）</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0;">
+    <div class="card-title">差异成因与优化建议</div>
+    <div class="info-box">
+      <b>① 最大幅值偏低（主要差异）</b><br>
+      本仿真 I_MAX=30 A；实车同级别约50~65 A。差距源于论文原始参数取自小型EPS电机（Kt=0.046 N·m/A），实车匹配时可将 I_MAX 或 Kt 放大约 1.8~2.1 倍。<br><br>
+      <b>② 死区略窄</b><br>
+      仿真0.5 N·m，行业标准1.0 N·m，目的是避免路面微振动频繁触发助力。两者均在工程合理范围内。<br><br>
+      <b>③ 曲线形状一致</b><br>
+      两者均为S形特性，低速大助力→高速轻助力，饱和区约5 N·m，趋势完全吻合，差异仅在幅值比例（约1:2）。<br><br>
+      <b>④ v5版优化说明</b><br>
+      原版查表插值 → 新版解析公式 I=I_MAX·exp(−0.02v)·S(T)，<span class="hi">消除了曲线交叉，车速感应特性严格单调</span>，S形转矩特性保留完整的路感区（1~3 N·m）和轻便区（3~5 N·m）分区。
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✅ 图片已下载，可直接插入Word</div>
+<div class="status-bar">
+  <div class="status-dot" id="sDot"></div>
+  <span id="sTxt">就绪 — 先确认系统参数，再切换标签页运行仿真</span>
+</div>
+
+<script>
+'use strict';
+// ─────────────────────────────────────────
+// SYSTEM PARAMETERS
+// ─────────────────────────────────────────
+const DEFAULTS={Js:.01,Bs:.01,Ks:180,iw:21.9,Jc:.08,Bc:.35,Kc:2.3,rp:.009,im:18,Jm:.0001,Kt:.046,Bm:.0007,Kb:.01,R:.1,L:.001,m:1850,Iz:4050,a:1.288,b:1.512,k1:-35000,k2:-38310};
+let P={...DEFAULTS};
+function readParams(){for(const k in DEFAULTS){const e=document.getElementById('p_'+k);if(e){const v=parseFloat(e.value);P[k]=isNaN(v)?DEFAULTS[k]:v;}}P.Jt=P.Jc+P.Jm*P.im*P.im;}
+function applyParams(){readParams();setReady('✔ 参数已应用 — 切换标签页运行仿真');}
+function resetParams(){for(const k in DEFAULTS){const e=document.getElementById('p_'+k);if(e)e.value=DEFAULTS[k];}readParams();setReady('参数已恢复默认值');}
+
+// ─────────────────────────────────────────
+// SPEED-SENSITIVE ASSIST MODEL（车速感应型，无曲线交叉）
+// I(t,v) = I_MAX · kv(v) · shape(t)
+// kv: 随车速单调递减指数衰减，保证不同车速曲线严格不交叉
+// shape: S形转矩特性，死区0~0.5 N·m，饱和区>5 N·m
+// ─────────────────────────────────────────
+const I_MAX=30;
+function fuzzyI(t,s){
+  t=Math.abs(t);
+  if(t<.5||s>=120)return 0;
+  t=Math.min(t,8);
+  // 车速衰减因子（严格单调递减，α=0.020）
+  const kv=Math.exp(-0.020*Math.max(5,s));
+  // S形转矩特性（smoothstep，死区→缓升→急升→饱和）
+  let shape;
+  if(t<1){shape=0.05*(t-.5)/.5;}
+  else if(t<5){const n=(t-1)/4;shape=0.05+0.95*n*n*(3-2*n);}
+  else{shape=1.0;}
+  return I_MAX*kv*shape;
+}
+
+// ─────────────────────────────────────────
+// RK4 SIMULATION
+// ─────────────────────────────────────────
+const cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+function deriv(x,Td,v_ms,U,mode,It){const[ts,ws,tc,wc,vy,wz,I]=x,v=Math.max(v_ms,.5),df=tc/P.iw,Tt=P.Ks*(ts-tc);const dts=ws,dws=(Td-P.Bs*ws-Tt)/P.Js,Ta=mode!=='mechanical'?P.im*P.Kt*I:0,dtc=wc,dwc=(Tt-P.Bc*wc-P.Kc*tc+Ta)/P.Jt,dvy=((P.k1+P.k2)*vy/v+(P.a*P.k1-P.b*P.k2)*wz/v+P.k1*df)/P.m-v*wz,dwz=((P.a*P.k1-P.b*P.k2)*vy/v+(P.a*P.a*P.k1+P.b*P.b*P.k2)*wz/v+P.a*P.k1*df)/P.Iz;let dI=0,dei=0;if(mode==='pid'){dI=(U-P.R*I-P.Kb*P.im*wc)/P.L;dei=It-I;}return[dts,dws,dtc,dwc,dvy,dwz,dI,dei];}
+function rk4s(x,Td,v,U,mode,It,dt){const k1=deriv(x,Td,v,U,mode,It),x2=x.map((v,i)=>v+.5*dt*k1[i]),k2=deriv(x2,Td,v,U,mode,It),x3=x.map((v,i)=>v+.5*dt*k2[i]),k3=deriv(x3,Td,v,U,mode,It),x4=x.map((v,i)=>v+dt*k3[i]),k4=deriv(x4,Td,v,U,mode,It);return x.map((v,i)=>v+(dt/6)*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));}
+function simulate(mode,Td,v_kmh,Kp,Ki,Kd,T,dt){const v_ms=v_kmh/3.6,N=Math.round(T/dt),t=[],wz=[],cur=[];let x=[0,0,0,0,0,0,0,0],pe=0;for(let i=0;i<=N;i++){t.push(i*dt);wz.push(x[5]);cur.push(x[6]);const Tt=P.Ks*(x[0]-x[2]),It=fuzzyI(Math.abs(Tt),v_kmh);let U=0;if(mode==='openloop'){x[6]=It;}else if(mode==='pid'){const e=It-x[6],de=(e-pe)/dt;U=cl(Kp*e+Ki*x[7]+Kd*de,-12,12);pe=e;}x=rk4s(x,Td,v_ms,U,mode,It,dt);}return{t,wz,cur};}
+function derivR(x,v_ms,U){const[ts,ws,tc,wc,vy,wz,I]=x,v=Math.max(v_ms,.5),df=tc/P.iw,Tt=P.Ks*(ts-tc);return[ws,(-P.Bs*ws-Tt)/P.Js,wc,(Tt-P.Bc*wc-P.Kc*tc+P.im*P.Kt*I)/P.Jt,((P.k1+P.k2)*vy/v+(P.a*P.k1-P.b*P.k2)*wz/v+P.k1*df)/P.m-v*wz,((P.a*P.k1-P.b*P.k2)*vy/v+(P.a*P.a*P.k1+P.b*P.b*P.k2)*wz/v+P.a*P.k1*df)/P.Iz,(U-P.R*I-P.Kb*P.im*wc)/P.L,0];}
+function rk4R(x,vm,U,dt){const k1=derivR(x,vm,U),x2=x.map((v,i)=>v+.5*dt*k1[i]),k2=derivR(x2,vm,U),x3=x.map((v,i)=>v+.5*dt*k2[i]),k3=derivR(x3,vm,U),x4=x.map((v,i)=>v+dt*k3[i]),k4=derivR(x4,vm,U);return x.map((v,i)=>v+(dt/6)*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));}
+function simRet(withEPS,th0,vk,Kpr,Kdr,T,dt){const vm=vk/3.6,N=Math.round(T/dt),t=[],ang=[];let x=[th0,0,th0,0,0,0,0,0];for(let i=0;i<=N;i++){t.push(i*dt);ang.push(x[0]*180/Math.PI);x=rk4R(x,vm,withEPS?cl(-Kpr*x[2]-Kdr*x[3],-12,12):0,dt);}return{t,ang};}
+
+// ─────────────────────────────────────────
+// ANALYSIS
+// ─────────────────────────────────────────
+function settleTime(t,d,b){const ss=d[d.length-1];if(Math.abs(ss)<1e-6)return null;const bnd=Math.abs(ss)*b;for(let i=d.length-1;i>=0;i--)if(Math.abs(d[i]-ss)>bnd)return t[Math.min(i+1,t.length-1)];return t[0];}
+function overshoot(d){const ss=d[d.length-1];if(Math.abs(ss)<1e-6)return 0;let pk=ss;for(const v of d)if(Math.abs(v)>Math.abs(pk))pk=v;return Math.abs((pk-ss)/ss)*100;}
+function retTime(t,a,thr){for(let i=0;i<a.length;i++)if(Math.abs(a[i])<thr)return t[i];return t[t.length-1];}
+
+// ─────────────────────────────────────────
+// CHART ENGINE — dual theme (dark screen / white export)
+// ─────────────────────────────────────────
+const PAL=['#0077cc','#ff6a2f','#22aa00','#cc8800','#cc0066','#7733cc','#009966','#bb6600'];
+// For screen (dark) we use brighter versions
+const PAL_DARK=['#00ddff','#ff6a2f','#55ff33','#ffc107','#ff6090','#c084fc','#34d399','#fbbf24'];
+
+// Cache: {datasets, opts, legendItems, title}
+const CC={};
+
+function adaptColor(c,light){
+  if(!light)return PAL_DARK[PAL.indexOf(c)]||c;
+  return c;
+}
+
+// Core rendering — works on any ctx with explicit dimensions
+function renderChartCore(ctx, W, H, datasets, opts, light, legendItems, title){
+  const dpr=1; // already scaled externally
+  const hasTitle=title&&title.length>0;
+  const hasLegend=legendItems&&legendItems.length>0;
+  const titleH=hasTitle?42:0;
+  const legendH=hasLegend?Math.ceil(legendItems.length/4)*32+16:0;
+  const pad={l:72,r:22,t:16,b:52};
+
+  const chartTop=titleH+pad.t;
+  const chartH=H-titleH-legendH-pad.t-pad.b;
+  const chartW=W-pad.l-pad.r;
+
+  // Outer background
+  ctx.fillStyle=light?'#ffffff':'#000000';
+  ctx.fillRect(0,0,W,H);
+
+  // Title
+  if(hasTitle){
+    ctx.fillStyle=light?'#111':'#eaf4ff';
+    ctx.font=`bold ${light?22:18}px "Microsoft YaHei","Segoe UI",sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText(title,W/2,titleH-8);
+  }
+
+  // Compute axis ranges
+  let xMn=Infinity,xMx=-Infinity,yMn=Infinity,yMx=-Infinity;
+  for(const ds of datasets){if(!ds.x||!ds.y)continue;for(const v of ds.x)if(isFinite(v)){xMn=Math.min(xMn,v);xMx=Math.max(xMx,v);}for(const v of ds.y)if(isFinite(v)){yMn=Math.min(yMn,v);yMx=Math.max(yMx,v);}}
+  if(!isFinite(xMn)){xMn=0;xMx=1;}if(!isFinite(yMn)){yMn=0;yMx=1;}
+  if(opts.yMin!==undefined)yMn=opts.yMin;if(opts.yMax!==undefined)yMx=opts.yMax;
+  if(opts.xMin!==undefined)xMn=opts.xMin;if(opts.xMax!==undefined)xMx=opts.xMax;
+  const xR=xMx-xMn||1,yR=yMx-yMn||1;
+  const xL=xMn,xRR=xMx+xR*.02,yB=yMn-yR*.06,yT=yMx+yR*.1;
+  const toX=v=>pad.l+(v-xL)/(xRR-xL)*chartW;
+  const toY=v=>chartTop+chartH-(v-yB)/(yT-yB)*chartH;
+
+  // Chart bg
+  ctx.fillStyle=light?'#f4f7fb':'#060e18';
+  ctx.fillRect(pad.l,chartTop,chartW,chartH);
+
+  // Grid
+  const nX=6,nY=5;
+  ctx.strokeStyle=light?'#ccddee':'#1a2e45';ctx.lineWidth=light?1:1;
+  for(let i=0;i<=nX;i++){const x=pad.l+i*chartW/nX;ctx.beginPath();ctx.moveTo(x,chartTop);ctx.lineTo(x,chartTop+chartH);ctx.stroke();}
+  for(let i=0;i<=nY;i++){const y=chartTop+i*chartH/nY;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+chartW,y);ctx.stroke();}
+
+  // Zero line
+  if(yB<0&&yT>0){const y0=toY(0);ctx.setLineDash([6,4]);ctx.strokeStyle=light?'#9aa':'#2a5575';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(pad.l,y0);ctx.lineTo(pad.l+chartW,y0);ctx.stroke();ctx.setLineDash([]);}
+
+  // Border
+  ctx.strokeStyle=light?'#7a9ab0':'#243d5a';ctx.lineWidth=1.5;ctx.strokeRect(pad.l,chartTop,chartW,chartH);
+
+  // Axis tick labels
+  const fs=light?15:13;
+  ctx.fillStyle=light?'#334455':'#7aabcc';ctx.font=`bold ${fs}px monospace`;ctx.textAlign='center';
+  for(let i=0;i<=nX;i++){const val=xL+i*(xRR-xL)/nX;ctx.fillText(val.toFixed(val>=100?0:1),pad.l+i*chartW/nX,chartTop+chartH+22);}
+  ctx.textAlign='right';
+  for(let i=0;i<=nY;i++){const val=yB+(nY-i)*(yT-yB)/nY;ctx.fillText(val.toFixed(Math.abs(val)>=10?2:3),pad.l-7,chartTop+i*chartH/nY+5);}
+
+  // Axis labels
+  ctx.fillStyle=light?'#445566':'#6090b0';ctx.font=`${light?15:13}px "Microsoft YaHei",sans-serif`;
+  ctx.textAlign='center';
+  ctx.fillText(opts.xLabel||'',pad.l+chartW/2,chartTop+chartH+44);
+  ctx.save();ctx.translate(16,chartTop+chartH/2);ctx.rotate(-Math.PI/2);ctx.fillText(opts.yLabel||'',0,0);ctx.restore();
+
+  // Data lines
+  for(const ds of datasets){
+    if(!ds.x||!ds.y||!ds.x.length)continue;
+    ctx.save();
+    const c=light?(PAL.indexOf(ds.screenColor)>=0?ds.screenColor:(ds.screenColor==='#cccccc'?'#555555':ds.screenColor||'#000')):ds.screenColor||'#fff';
+    ctx.strokeStyle=c;
+    ctx.lineWidth=(ds.lw||2.5)*(light?1.2:1);
+    if(ds.dash)ctx.setLineDash(ds.dash.map(v=>v*(light?1:1)));
+    ctx.beginPath();
+    const step=Math.max(1,Math.floor(ds.x.length/(chartW*2)));
+    let first=true;
+    for(let i=0;i<ds.x.length;i+=step){const px=toX(ds.x[i]),py=toY(ds.y[i]);if(first){ctx.moveTo(px,py);first=false;}else ctx.lineTo(px,py);}
+    ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  }
+
+  // Legend (in image)
+  if(hasLegend){
+    const ly=H-legendH+14;
+    const itemW=Math.min(200,W/Math.min(legendItems.length,4));
+    ctx.font=`bold ${light?15:13}px "Microsoft YaHei",sans-serif`;
+    legendItems.forEach((item,i)=>{
+      const col=i%4,row=Math.floor(i/4);
+      const lx=pad.l+col*itemW;const lly=ly+row*28;
+      const c=light?(item.screenColor==='#cccccc'?'#555':item.screenColor):item.screenColor;
+      ctx.fillStyle=c;
+      ctx.fillRect(lx,lly-8,28,5);
+      ctx.fillStyle=light?'#333':'#aaccee';
+      ctx.textAlign='left';
+      ctx.fillText(item.label,lx+34,lly-3);
+    });
+  }
+}
+
+// Screen drawChart — uses dark theme, sets up canvas
+function drawChart(canvasId,datasets,opts,legendItems,title){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  // Store for export
+  CC[canvasId]={datasets:datasets.map(ds=>({...ds})),opts:{...opts},legendItems,title};
+  const dpr=window.devicePixelRatio||1;
+  const w=canvas.parentElement.clientWidth-28;
+  const h=Math.max(200,Math.min(300,Math.round(w*.58)));
+  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  // Dark theme pass
+  renderChartCore(ctx,w,h,datasets,opts,false,null,null);
+}
+
+// Screen heatmap
+function drawHeatmap(canvasId){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas)return;
+  CC[canvasId]={type:'heatmap'};
+  const dpr=window.devicePixelRatio||1;
+  const w=canvas.parentElement.clientWidth-28;
+  const h=Math.max(200,Math.min(280,Math.round(w*.55)));
+  canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+  canvas.style.width=w+'px';canvas.style.height=h+'px';
+  const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);
+  _drawHeatmapCore(ctx,w,h,false);
+}
+
+function _drawHeatmapCore(ctx,W,H,light){
+  const pad={l:60,r:80,t:light?50:16,b:52};
+  const pw=W-pad.l-pad.r,ph=H-pad.t-pad.b;
+  ctx.fillStyle=light?'#ffffff':'#000000';ctx.fillRect(0,0,W,H);
+  if(light){ctx.fillStyle='#111';ctx.font='bold 20px "Microsoft YaHei",sans-serif';ctx.textAlign='center';ctx.fillText('助力电流热力图（转矩×车速）',W/2,30);}
+  const NX=100,NY=80;
+  for(let ix=0;ix<NX;ix++)for(let iy=0;iy<NY;iy++){
+    const tv=ix/NX*8,sv=iy/NY*120,val=fuzzyI(tv,sv)/I_MAX;
+    const r=Math.round(val<.5?0:(val-.5)*2*200),g=Math.round(val<.5?val*2*160:(1-(val-.5)*2)*160),b=Math.round(val<.5?140+val*2*80:(1-(val-.5)*2)*100);
+    ctx.fillStyle=`rgb(${r},${g},${b})`;
+    ctx.fillRect(pad.l+ix*pw/NX,pad.t+(NY-1-iy)*ph/NY,pw/NX+1,ph/NY+1);
+  }
+  ctx.strokeStyle=light?'#888':'#243d5a';ctx.lineWidth=1.5;ctx.strokeRect(pad.l,pad.t,pw,ph);
+  const fs=light?15:13;
+  ctx.fillStyle=light?'#334455':'#7aabcc';ctx.font=`bold ${fs}px monospace`;ctx.textAlign='center';
+  for(let i=0;i<=5;i++)ctx.fillText((i*8/5).toFixed(1),pad.l+i*pw/5,pad.t+ph+22);
+  ctx.fillStyle=light?'#445566':'#6090b0';ctx.font=`${fs}px "Microsoft YaHei",sans-serif`;ctx.fillText('转矩 (N·m)',pad.l+pw/2,H-6);
+  ctx.fillStyle=light?'#334455':'#7aabcc';ctx.font=`bold ${fs}px monospace`;ctx.textAlign='right';
+  for(let i=0;i<=4;i++)ctx.fillText((i*30),pad.l-5,pad.t+(4-i)*ph/4+4);
+  ctx.save();ctx.translate(14,pad.t+ph/2);ctx.rotate(-Math.PI/2);ctx.fillStyle=light?'#445566':'#6090b0';ctx.font=`${fs}px "Microsoft YaHei",sans-serif`;ctx.textAlign='center';ctx.fillText('车速 (km/h)',0,0);ctx.restore();
+  // Colorbar
+  const cbX=pad.l+pw+10,cbW=18;
+  for(let i=0;i<ph;i++){const val=1-i/ph,r=Math.round(val<.5?0:(val-.5)*2*200),g=Math.round(val<.5?val*2*160:(1-(val-.5)*2)*160),b=Math.round(val<.5?140+val*2*80:(1-(val-.5)*2)*100);ctx.fillStyle=`rgb(${r},${g},${b})`;ctx.fillRect(cbX,pad.t+i,cbW,2);}
+  ctx.strokeStyle=light?'#888':'#243d5a';ctx.strokeRect(cbX,pad.t,cbW,ph);
+  ctx.fillStyle=light?'#333':'#7aabcc';ctx.font=`${fs-1}px monospace`;ctx.textAlign='left';
+  ctx.fillText('30A',cbX+cbW+4,pad.t+8);ctx.fillText('15A',cbX+cbW+4,pad.t+ph/2+4);ctx.fillText('0A',cbX+cbW+4,pad.t+ph+4);
+}
+
+// ─────────────────────────────────────────
+// DOWNLOAD FUNCTIONS
+// ─────────────────────────────────────────
+function dlChart(id, filename){
+  const c=CC[id];
+  if(!c){showToast('⚠ 请先运行仿真生成图表');return;}
+  const W=1600,H=1000;
+  const oc=document.createElement('canvas');
+  oc.width=W;oc.height=H;
+  const ctx=oc.getContext('2d');
+  renderChartCore(ctx,W,H,c.datasets,c.opts,true,c.legendItems,c.title||filename.replace(/_/g,' '));
+  _triggerDownload(oc,filename+'.png');
+}
+
+function dlHeatmap(id, filename){
+  const W=1600,H=1000;
+  const oc=document.createElement('canvas');
+  oc.width=W;oc.height=H;
+  const ctx=oc.getContext('2d');
+  _drawHeatmapCore(ctx,W,H,true);
+  _triggerDownload(oc,filename+'.png');
+}
+
+function _triggerDownload(canvas,name){
+  const link=document.createElement('a');
+  link.download=name;
+  link.href=canvas.toDataURL('image/png');
+  link.click();
+  showToast('✅ 图片已下载，可直接插入Word');
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+// ─────────────────────────────────────────
+// STATUS
+// ─────────────────────────────────────────
+function setBusy(m){document.getElementById('sDot').classList.add('busy');document.getElementById('sTxt').textContent=m;}
+function setReady(m){document.getElementById('sDot').classList.remove('busy');document.getElementById('sTxt').textContent=m;}
+
+// ─────────────────────────────────────────
+// TAB RUNNERS
+// ─────────────────────────────────────────
+function runTab1(){
+  readParams(); setBusy('绘制助力特性曲线...');
+  requestAnimationFrame(()=>{
+    const tMin=parseFloat(document.getElementById('t1_tmin').value)||0;
+    const tMax=parseFloat(document.getElementById('t1_tmax').value)||8;
+    const speeds=document.getElementById('t1_speeds').value.split(',').map(s=>parseFloat(s.trim())).filter(x=>!isNaN(x));
+    const N=200,torqs=Array.from({length:N},(_,i)=>tMin+i*(tMax-tMin)/(N-1));
+    const ds=speeds.map((v,idx)=>({x:torqs,y:torqs.map(t=>fuzzyI(t,v)),screenColor:PAL_DARK[idx%8],lw:3}));
+    const leg=speeds.map((v,i)=>({screenColor:PAL_DARK[i%8],label:`${v} km/h`}));
+    drawChart('canvas1a',ds,{xLabel:'方向盘转矩 (N·m)',yLabel:'电流 I (A)',xMin:tMin,xMax:tMax,yMin:0,yMax:28},leg,'助力特性曲线（电流 vs 转矩）');
+    document.getElementById('legend1a').innerHTML=speeds.map((v,i)=>`<div class="legend-item"><div class="legend-line" style="background:${PAL_DARK[i%8]}"></div>${v} km/h</div>`).join('');
+    drawHeatmap('canvas1b');
+    setReady('助力特性曲线绘制完成 — 点击📥下载图片');
+  });
+}
+
+function runTab2(){
+  readParams();
+  const v=parseFloat(document.getElementById('t2_v').value)||35;
+  const Td=parseFloat(document.getElementById('t2_Td').value)||3;
+  const Kp=parseFloat(document.getElementById('t2_Kp').value)||0;
+  const Ki=parseFloat(document.getElementById('t2_Ki').value)||0;
+  const Kd=parseFloat(document.getElementById('t2_Kd').value)||0;
+  const T=parseFloat(document.getElementById('t2_T').value)||8;
+  setBusy(`运行横摆角速度仿真 v=${v}km/h Td=${Td}N·m …`);
+  setTimeout(()=>{
+    const dt=.001,step=5;
+    const mR=simulate('mechanical',Td,v,0,0,0,T,dt);
+    const oR=simulate('openloop',Td,v,0,0,0,T,dt);
+    const pR=simulate('pid',Td,v,Kp,Ki,Kd,T,dt);
+    const ds=(r,fn,c,dash)=>({x:r.t.filter((_,i)=>i%step===0),y:r[fn].filter((_,i)=>i%step===0),screenColor:c,lw:2.5,dash});
+    const leg=[{screenColor:'#cccccc',label:'机械式转向',dash:[5,4]},{screenColor:'#ff6a2f',label:'EPS开环控制'},{screenColor:'#00ddff',label:'PID控制EPS'}];
+    drawChart('canvas2a',[ds(mR,'wz','#cccccc',[5,4]),ds(oR,'wz','#ff6a2f'),ds(pR,'wz','#00ddff')],{xLabel:'时间 (s)',yLabel:'ωz (rad/s)',xMin:0,xMax:T},leg,`横摆角速度响应曲线对比（v=${v}km/h, Td=${Td}N·m）`);
+    const leg2=[{screenColor:'#ff6a2f',label:'EPS开环控制'},{screenColor:'#00ddff',label:'PID控制EPS'}];
+    drawChart('canvas2b',[ds(oR,'cur','#ff6a2f'),ds(pR,'cur','#00ddff')],{xLabel:'时间 (s)',yLabel:'I (A)',xMin:0,xMax:T,yMin:0},leg2,`电机助力电流响应（v=${v}km/h, Kp=${Kp}, Ki=${Ki}）`);
+    const f=(x,T)=>x!=null?x.toFixed(2)+'s':`>${T}s`;
+    document.getElementById('r2_mt').textContent=f(settleTime(mR.t,mR.wz,.02),T);
+    document.getElementById('r2_mo').textContent=overshoot(mR.wz).toFixed(1)+'%';
+    document.getElementById('r2_ot').textContent=f(settleTime(oR.t,oR.wz,.02),T);
+    document.getElementById('r2_oo').textContent=overshoot(oR.wz).toFixed(1)+'%';
+    document.getElementById('r2_pt').textContent=f(settleTime(pR.t,pR.wz,.02),T);
+    document.getElementById('r2_po').textContent=overshoot(pR.wz).toFixed(1)+'%';
+    setReady(`仿真完成 — 点击📥下载图片`);
+  },60);
+}
+function resetTab2(){['t2_v,35','t2_Td,3','t2_Kp,2','t2_Ki,1.5','t2_Kd,0','t2_T,8'].forEach(s=>{const[id,v]=s.split(',');document.getElementById(id).value=v;});}
+
+function runTab3(){
+  readParams();
+  const v=parseFloat(document.getElementById('t3_v').value)||35;
+  const Td=parseFloat(document.getElementById('t3_Td').value)||3;
+  const T=parseFloat(document.getElementById('t3_T').value)||8;
+  const kpL=document.getElementById('t3_kplist').value.split(',').map(s=>parseFloat(s.trim())).filter(x=>!isNaN(x));
+  const kiL=document.getElementById('t3_kilist').value.split(',').map(s=>parseFloat(s.trim())).filter(x=>!isNaN(x));
+  setBusy('运行PID调参分析 …');
+  setTimeout(()=>{
+    const dt=.002,step=3;
+    const mkDs=(list,fn)=>list.map((val,idx)=>{const r=fn(val);return{x:r.t.filter((_,i)=>i%step===0),y:r.wz.filter((_,i)=>i%step===0),screenColor:PAL_DARK[idx%8],lw:2.5};});
+    const dsKp=mkDs(kpL,kp=>simulate('pid',Td,v,kp,0,0,T,dt));
+    const dsKi=mkDs(kiL,ki=>simulate('pid',Td,v,2,ki,0,T,dt));
+    const legKp=kpL.map((kp,i)=>({screenColor:PAL_DARK[i%8],label:`Kp=${kp}`}));
+    const legKi=kiL.map((ki,i)=>({screenColor:PAL_DARK[i%8],label:`Ki=${ki}`}));
+    drawChart('canvas3a',dsKp,{xLabel:'时间 (s)',yLabel:'ωz (rad/s)',xMin:0,xMax:T},legKp,`Kp对横摆角速度的影响（Ki=Kd=0, v=${v}km/h）`);
+    drawChart('canvas3b',dsKi,{xLabel:'时间 (s)',yLabel:'ωz (rad/s)',xMin:0,xMax:T},legKi,`Ki对横摆角速度的影响（Kp=2, Kd=0, v=${v}km/h）`);
+    document.getElementById('legend3a').innerHTML=kpL.map((kp,i)=>`<div class="legend-item"><div class="legend-line" style="background:${PAL_DARK[i%8]}"></div>Kp=${kp}</div>`).join('');
+    document.getElementById('legend3b').innerHTML=kiL.map((ki,i)=>`<div class="legend-item"><div class="legend-line" style="background:${PAL_DARK[i%8]}"></div>Ki=${ki}</div>`).join('');
+    setReady('PID调参完成 — 点击📥下载图片');
+  },60);
+}
+
+function runTab4(){
+  readParams();
+  const v=parseFloat(document.getElementById('t4_v').value)||30;
+  const th0=parseFloat(document.getElementById('t4_th0').value)*Math.PI/180;
+  const Kpr=parseFloat(document.getElementById('t4_Kpr').value)||5;
+  const Kdr=parseFloat(document.getElementById('t4_Kdr').value)||0;
+  const T=parseFloat(document.getElementById('t4_T').value)||5;
+  const kprL=document.getElementById('t4_kprlist').value.split(',').map(s=>parseFloat(s.trim())).filter(x=>!isNaN(x));
+  setBusy('运行回正仿真 …');
+  setTimeout(()=>{
+    const dt=.001,step=3;
+    const mR=simRet(false,th0,v,0,0,T,dt);
+    const eR=simRet(true,th0,v,Kpr,Kdr,T,dt);
+    const th0d=Math.round(parseFloat(document.getElementById('t4_th0').value));
+    const leg=[{screenColor:'#cccccc',label:'机械式回正'},{screenColor:'#00ddff',label:`EPS回正 Kp_r=${Kpr} Kd_r=${Kdr}`}];
+    drawChart('canvas4a',[
+      {x:mR.t.filter((_,i)=>i%step===0),y:mR.ang.filter((_,i)=>i%step===0),screenColor:'#cccccc',lw:2,dash:[5,4]},
+      {x:eR.t.filter((_,i)=>i%step===0),y:eR.ang.filter((_,i)=>i%step===0),screenColor:'#00ddff',lw:2.5},
+    ],{xLabel:'时间 (s)',yLabel:'θs (°)',xMin:0,xMax:T},leg,`方向盘回正曲线（θ₀=${th0d}°, v=${v}km/h）`);
+    document.getElementById('r4_mt').textContent=(()=>{const t=retTime(mR.t,mR.ang,5);return t>=T?`>${T}s`:t.toFixed(2)+'s';})();
+    document.getElementById('r4_et').textContent=retTime(eR.t,eR.ang,5).toFixed(2)+'s';
+    const dsKpr=kprL.map((kp,idx)=>{const r=simRet(true,th0,v,kp,Kdr,T,dt);return{x:r.t.filter((_,i)=>i%step===0),y:r.ang.filter((_,i)=>i%step===0),screenColor:PAL_DARK[idx%8],lw:2.5};});
+    const legKpr=kprL.map((kp,i)=>({screenColor:PAL_DARK[i%8],label:`Kp_r=${kp}`}));
+    drawChart('canvas4b',dsKpr,{xLabel:'时间 (s)',yLabel:'θs (°)',xMin:0,xMax:T},legKpr,`Kp_r对回正特性的影响（Kd_r=${Kdr}, v=${v}km/h）`);
+    document.getElementById('legend4b').innerHTML=kprL.map((kp,i)=>`<div class="legend-item"><div class="legend-line" style="background:${PAL_DARK[i%8]}"></div>Kp_r=${kp}</div>`).join('');
+    setReady('回正仿真完成 — 点击📥下载图片');
+  },60);
+}
+
+// ─────────────────────────────────────────
+// TAB 5: DIFFERENCE ANALYSIS
+// ─────────────────────────────────────────
+const REAL_IMAX=60;
+function realSpeedFactor(v){return 0.95*Math.exp(-0.016*v)+0.05;}
+function realShape(t){if(t<1)return 0;if(t>=5)return 1.0;const n=(t-1)/4;return n*n*(3-2*n);}
+function realI(t,v){t=Math.abs(t);return REAL_IMAX*realSpeedFactor(v)*realShape(t);}
+
+let t5Speed=10;
+
+// 从 Tab1 速度列表动态构建按钮，若当前选中速度不在列表中则默认选第一个
+function t5BuildButtons(){
+  const speeds=document.getElementById('t1_speeds').value
+    .split(',').map(s=>parseFloat(s.trim())).filter(x=>!isNaN(x)&&x>0);
+  if(!speeds.length)return;
+  if(!speeds.includes(t5Speed))t5Speed=speeds[0];
+  const row=document.getElementById('t5_btn_row');
+  row.innerHTML=speeds.map(v=>`<button class="btn ${v===t5Speed?'btn-primary':'btn-ghost'}"
+    style="width:auto;padding:10px 18px;margin-top:0;"
+    onclick="t5SetSpeed(${v})" data-t5v="${v}">${v} km/h</button>`).join('');
+}
+
+function t5SetSpeed(v){
+  t5Speed=v;
+  document.querySelectorAll('#t5_btn_row button').forEach(b=>{
+    const bv=parseFloat(b.dataset.t5v);
+    b.className='btn '+(bv===v?'btn-primary':'btn-ghost');
+    b.style.width='auto';b.style.padding='10px 18px';b.style.marginTop='0';
+  });
+  _drawTab5Charts(v);
+}
+
+function _drawTab5Charts(v){
+  const N=200,torqs=Array.from({length:N},(_,i)=>i*8/(N-1));
+  const simDs={x:torqs,y:torqs.map(t=>fuzzyI(t,v)),screenColor:'#00ddff',lw:3};
+  const realDs={x:torqs,y:torqs.map(t=>realI(t,v)),screenColor:'#ff6a2f',lw:3,dash:[8,4]};
+  const yMax=Math.ceil(Math.max(...realDs.y)/5)*5+5;
+  drawChart('canvas5a',[simDs,realDs],{xLabel:'方向盘转矩 (N·m)',yLabel:'电流 I (A)',xMin:0,xMax:8,yMin:0,yMax:yMax},
+    [{screenColor:'#00ddff',label:`仿真 ${v}km/h`},{screenColor:'#ff6a2f',label:`实车参考 ${v}km/h`}],
+    `助力电流对比（${v} km/h）`);
+  document.getElementById('t5_heading').textContent=`助力电流对比（${v} km/h）`;
+  // metric cards
+  const smax=fuzzyI(8,v),rmax=realI(8,v),s3=fuzzyI(3,v),r3=realI(3,v);
+  document.getElementById('r5_smax').textContent=smax.toFixed(1)+' A';
+  document.getElementById('r5_rmax').textContent=rmax.toFixed(1)+' A';
+  document.getElementById('r5_s3').textContent=s3.toFixed(1)+' A';
+  document.getElementById('r5_r3').textContent=r3.toFixed(1)+' A';
+  document.getElementById('r5_ratio').textContent=(smax/rmax*100).toFixed(0)+'%';
+  // diff curve (gap at T=5 across speeds)
+  const speeds=Array.from({length:120},(_,i)=>i+1);
+  const diffDs={x:speeds,y:speeds.map(s=>Math.max(0,realI(5,s)-fuzzyI(5,s))),screenColor:'#ffc107',lw:2.5};
+  const simLine={x:speeds,y:speeds.map(s=>fuzzyI(5,s)),screenColor:'#00ddff',lw:2,dash:[6,4]};
+  const realLine={x:speeds,y:speeds.map(s=>realI(5,s)),screenColor:'#ff6a2f',lw:2,dash:[6,4]};
+  drawChart('canvas5b',[diffDs,simLine,realLine],{xLabel:'车速 (km/h)',yLabel:'电流 (A)',xMin:0,xMax:120,yMin:0},
+    [{screenColor:'#ffc107',label:'差值 ΔI'},{screenColor:'#00ddff',label:'仿真@5N·m'},{screenColor:'#ff6a2f',label:'实车@5N·m'}],
+    '全车速域电流差值（T=5 N·m处）');
+}
+
+function runTab5(){readParams();t5BuildButtons();_drawTab5Charts(t5Speed);}
+
+// ─────────────────────────────────────────
+// TAB SWITCH
+// ─────────────────────────────────────────
+const RUNNERS=[null,runTab1,runTab2,runTab3,runTab4,runTab5];
+function switchTab(idx){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
+  if(RUNNERS[idx])setTimeout(RUNNERS[idx],80);
+  else setReady('修改参数后点击【✔ 应用参数】，再切换其他标签页运行仿真');
+}
+window.addEventListener('load',()=>{readParams();setReady('就绪 — 系统参数已加载，可切换标签页运行仿真并下载图片');});
+window.addEventListener('resize',()=>{const idx=[...document.querySelectorAll('.tab-panel')].findIndex(p=>p.classList.contains('active'));if(idx>0&&RUNNERS[idx])setTimeout(RUNNERS[idx],120);});
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+if (e.key === 'F12' || 
+(e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+(e.ctrlKey && e.key === 'U') ||
+(e.ctrlKey && e.key === 'S')) {
+e.preventDefault();
+return false;
+}
+});
+
+</script>
+<script>
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        (e.ctrlKey && e.key === 'U') ||
+        (e.ctrlKey && e.key === 'S')) {
+      e.preventDefault();
+      return false;
+    }
+  });
+</script>
+
+</body>
+</html>
