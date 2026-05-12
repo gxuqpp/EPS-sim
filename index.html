@@ -93,6 +93,47 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI','Microsoft Ya
 .c-mech{color:#cccccc!important;}
 .c-ol{color:var(--accent2)!important;}
 .c-pid{color:var(--accent)!important;}
+
+/* ===== CASE 18 STYLES ===== */
+.c18-cw{width:100%;aspect-ratio:4/3;overflow:hidden;background:#050810;
+  border:1px solid var(--border);border-radius:9px;display:block;margin-bottom:10px;}
+.c18-bc{display:block;width:100%;height:100%;}
+.c18-inner-tabs{display:flex;background:var(--panel2);border-bottom:1.5px solid var(--border);border-radius:8px 8px 0 0;overflow:hidden;flex-wrap:nowrap;}
+.c18-inner-tab{flex:1;padding:11px 5px;background:none;border:none;color:var(--text2);
+  font-size:.88rem;font-family:inherit;font-weight:700;cursor:pointer;
+  transition:all .2s;border-bottom:3px solid transparent;text-align:center;line-height:1.4;}
+.c18-inner-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(0,221,255,.07);}
+.c18-inner-panel{display:none;padding:14px 14px 6px;}
+.c18-inner-panel.active{display:block;}
+.c18-var-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+.c18-var-btn{padding:11px 6px;background:var(--panel2);border:1.5px solid var(--border);
+  border-radius:8px;color:var(--text2);font-size:.86rem;font-family:inherit;font-weight:700;
+  cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;}
+.c18-var-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,221,255,.1);}
+.c18-var-btn b{display:block;font-size:.98rem;}
+.c18-stab-result{background:var(--panel2);border-radius:9px;padding:14px;margin-top:10px;}
+.c18-rrow{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:4px;}
+.c18-rrow:last-child{border-bottom:none;}
+.c18-rl{color:var(--text2);font-size:.86rem;}
+.c18-rv{font-family:'Courier New',monospace;font-size:.88rem;color:var(--text);}
+.c18-rv.ok{color:var(--green);font-weight:800;}
+.c18-rv.ng{color:#f56565;font-weight:800;}
+.c18-verdict{text-align:center;padding:14px;border-radius:9px;margin-top:10px;
+  font-size:1.15rem;font-weight:900;letter-spacing:2px;}
+.c18-verdict.stable{background:rgba(0,230,118,.1);border:2px solid var(--green);color:var(--green);}
+.c18-verdict.unstable{background:rgba(245,101,101,.1);border:2px solid #f56565;color:#f56565;}
+.c18-btn-dl{width:100%;padding:11px;background:rgba(0,221,255,.08);
+  border:1.5px solid rgba(0,221,255,.35);color:var(--accent);
+  font-size:.92rem;font-family:inherit;font-weight:700;cursor:pointer;
+  border-radius:8px;margin-top:8px;transition:background .15s;letter-spacing:1px;}
+.c18-btn-dl:active{background:rgba(0,221,255,.22);}
+.c18-hint{font-size:.78rem;color:#4a6888;margin-top:4px;text-align:center;}
+.c18-vals-wrap{background:var(--panel2);border:1.5px solid var(--border);
+  border-radius:8px;padding:12px;margin-bottom:12px;}
+.c18-vals-wrap h4{font-size:.88rem;color:var(--yellow);font-weight:700;margin-bottom:10px;}
+.c18-info-tag{display:inline-block;background:rgba(0,221,255,.1);border:1px solid rgba(0,221,255,.3);
+  color:var(--accent);border-radius:4px;padding:1px 7px;font-size:.78rem;margin:2px 2px 2px 0;}
 user-select: none
 </style>
 </head>
@@ -113,6 +154,7 @@ user-select: none
   <div class="tab" onclick="switchTab(3)">🎛 PID调参</div>
   <div class="tab" onclick="switchTab(4)">↩ 回正控制</div>
   <div class="tab" onclick="switchTab(5)">📊 差异对比</div>
+  <div class="tab" onclick="switchTab(6)">📐频域敏感性分析</div>
 </div>
 
 <!-- ============ TAB 0: SYSTEM PARAMETERS ============ -->
@@ -377,6 +419,124 @@ user-select: none
       两者均为S形特性，低速大助力→高速轻助力，饱和区约5 N·m，趋势完全吻合，差异仅在幅值比例（约1:2）。<br><br>
       <b>④ v5版优化说明</b><br>
       原版查表插值 → 新版解析公式 I=I_MAX·exp(−0.02v)·S(T)，<span class="hi">消除了曲线交叉，车速感应特性严格单调</span>，S形转矩特性保留完整的路感区（1~3 N·m）和轻便区（3~5 N·m）分区。
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ TAB 6: CASE 18 ============ -->
+<div class="tab-panel" id="panel-6">
+  <div class="card">
+    <div class="card-title">转向路感 · 灵敏度 · 操纵稳定性</div>
+    <div class="info-box">
+      <b>以下参数自动引用「⚙ 系统参数」页的设定，无需重复输入：</b><br>
+      <span class="c18-info-tag">m 整车质量</span>
+      <span class="c18-info-tag">Iz 转动惯量</span>
+      <span class="c18-info-tag">a/b 轴距</span>
+      <span class="c18-info-tag">k1×2/k2×2 单侧→轴总刚度 K1/K2</span>
+      <span class="c18-info-tag">iw 转向比→G2</span>
+      <span class="c18-info-tag">im 电机传动比→G1</span>
+      <span class="c18-info-tag">Jm 电机惯量</span>
+      <span class="c18-info-tag">Bm 电机阻尼</span>
+      <span class="c18-info-tag">Kt 转矩常数→Ka</span>
+    </div>
+    <div class="card-sub">专属参数</div>
+    <div class="g2">
+      <div class="field"><label>传感器/扭杆刚度 Ks (N·m/rad)</label><input type="number" id="c18_Ks" value="93.4" step="0.1" min="0.1"></div>
+      <div class="field"><label>前轮拖距 d (m)</label><input type="number" id="c18_d" value="0.11" step="0.01" min="0"></div>
+      <div class="field"><label>助力增益系数 K</label><input type="number" id="c18_K" value="10" step="0.5" min="0"></div>
+      <div class="field"><label>折算总惯性矩 Jr (kg·m²)</label><input type="number" id="c18_Jr" value="0.09" step="0.001" min="0"></div>
+      <div class="field"><label>折算阻尼系数 Br (N·m·s/rad)</label><input type="number" id="c18_Br" value="0.27" step="0.01" min="0"></div>
+      <div class="field"><label>分析用车速 V (m/s)</label><input type="number" id="c18_V" value="10" step="0.5" min="0.5"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:0;padding:0;overflow:hidden;">
+    <div class="c18-inner-tabs" id="c18TabBar">
+      <button class="c18-inner-tab active" onclick="switchC18Tab('c18p2',this)">任务一<br>转向路感</button>
+      <button class="c18-inner-tab" onclick="switchC18Tab('c18p3',this)">任务二<br>转向灵敏度</button>
+      <button class="c18-inner-tab" onclick="switchC18Tab('c18p4',this)">任务三<br>操纵稳定性</button>
+    </div>
+
+    <!-- 任务一: 路感 -->
+    <div id="c18p2" class="c18-inner-panel active">
+      <div class="info-box" style="margin-bottom:12px;">转向路感定义为路面载荷到驾驶员手力的传递特性，由 E(jω) 计算，以波德图展示。</div>
+      <div style="font-size:.88rem;color:var(--text2);margin-bottom:9px;font-weight:700;">▶ 选择变化参数：</div>
+      <div class="c18-var-grid" id="c18sg2">
+        <button class="c18-var-btn active" onclick="selC18Sub('t2',0,this)">助力传动比<br><b>G1 (im)</b></button>
+        <button class="c18-var-btn" onclick="selC18Sub('t2',1,this)">电机惯量<br><b>Jm</b></button>
+        <button class="c18-var-btn" onclick="selC18Sub('t2',2,this)">传感器刚度<br><b>Ks</b></button>
+        <button class="c18-var-btn" onclick="selC18Sub('t2',3,this)">助力增益<br><b>K</b></button>
+      </div>
+      <div class="c18-vals-wrap">
+        <h4 id="c18vt2">设置 G1 的三条曲线取值：</h4>
+        <div class="g3">
+          <div class="field"><label>曲线①</label><input id="c18v2_1" value="15" type="number"></div>
+          <div class="field"><label>曲线②</label><input id="c18v2_2" value="25" type="number"></div>
+          <div class="field"><label>曲线③</label><input id="c18v2_3" value="35" type="number"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="doC18T2()">▶ 计 算 绘 图</button>
+      <div class="c18-cw" id="c18cw2"><canvas class="c18-bc" id="c18cv2"></canvas></div>
+      <button class="c18-btn-dl" onclick="dlC18Plot('t2')">⬇ 下载波德图（白底 PNG）</button>
+      <p class="c18-hint">下载尺寸 1600×1200 px，可直接插入 Word</p>
+    </div>
+
+    <!-- 任务二： 灵敏度 -->
+    <div id="c18p3" class="c18-inner-panel">
+      <div class="info-box" style="margin-bottom:12px;">转向灵敏度为横摆角速度与转向盘转角的传递函数，由 r/θh(jω) 计算，以波德图展示。</div>
+      <div style="font-size:.88rem;color:var(--text2);margin-bottom:9px;font-weight:700;">▶ 选择变化参数：</div>
+      <div class="c18-var-grid" id="c18sg3">
+        <button class="c18-var-btn active" onclick="selC18Sub('t3',0,this)">助力传动比<br><b>G1 (im)</b></button>
+        <button class="c18-var-btn" onclick="selC18Sub('t3',1,this)">电机惯量<br><b>Jm</b></button>
+        <button class="c18-var-btn" onclick="selC18Sub('t3',2,this)">传感器刚度<br><b>Ks</b></button>
+        <button class="c18-var-btn" onclick="selC18Sub('t3',3,this)">助力增益<br><b>K</b></button>
+      </div>
+      <div class="c18-vals-wrap">
+        <h4 id="c18vt3">设置 G1 的三条曲线取值：</h4>
+        <div class="g3">
+          <div class="field"><label>曲线①</label><input id="c18v3_1" value="15" type="number"></div>
+          <div class="field"><label>曲线②</label><input id="c18v3_2" value="25" type="number"></div>
+          <div class="field"><label>曲线③</label><input id="c18v3_3" value="35" type="number"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="doC18T3()">▶ 计 算 绘 图</button>
+      <div class="c18-cw" id="c18cw3"><canvas class="c18-bc" id="c18cv3"></canvas></div>
+      <button class="c18-btn-dl" onclick="dlC18Plot('t3')">⬇ 下载波德图（白底 PNG）</button>
+      <p class="c18-hint">下载尺寸 1600×1200 px，可直接插入 Word</p>
+    </div>
+
+    <!-- 任务三: 操纵稳定性 -->
+    <div id="c18p4" class="c18-inner-panel">
+      <div class="info-box" style="margin-bottom:12px;">
+        根据劳斯判据，<b>g₁ &gt; 0</b> 且 <b>g₂ &gt; 0</b> 时系统稳定。可指定特定分析车速（不影响上方任务一/二的 V 设置）。
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label>分析车速 V (m/s)</label>
+          <input id="c18t4V" value="22.22" type="number" step="0.01"
+            oninput="document.getElementById('c18t4kph').value=(+this.value*3.6).toFixed(1)">
+        </div>
+        <div class="field">
+          <label>对应 km/h（参考输入）</label>
+          <input id="c18t4kph" value="80" type="number" step="1"
+            oninput="document.getElementById('c18t4V').value=(+this.value/3.6).toFixed(3)">
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="doC18T4()">▶ 计 算 稳 定 性</button>
+      <div id="c18t4res" style="display:none;">
+        <div class="c18-stab-result">
+          <div class="c18-rrow"><span class="c18-rl">特征多项式系数 A₀</span><span class="c18-rv" id="c18rA0">—</span></div>
+          <div class="c18-rrow"><span class="c18-rl">特征多项式系数 A₁</span><span class="c18-rv" id="c18rA1">—</span></div>
+          <div class="c18-rrow"><span class="c18-rl">特征多项式系数 A₂</span><span class="c18-rv" id="c18rA2">—</span></div>
+          <div class="c18-rrow"><span class="c18-rl">特征多项式系数 A₃</span><span class="c18-rv" id="c18rA3">—</span></div>
+          <div class="c18-rrow"><span class="c18-rl">特征多项式系数 A₄</span><span class="c18-rv" id="c18rA4">—</span></div>
+          <div class="c18-rrow" style="border-top:1px solid var(--border);margin-top:4px;padding-top:10px;">
+            <span class="c18-rl">g₁ = A₁A₂ − A₀A₃</span><span class="c18-rv" id="c18rg1">—</span></div>
+          <div class="c18-rrow"><span class="c18-rl">g₂ = A₁A₂A₃ − A₀A₃² − A₁²A₄</span><span class="c18-rv" id="c18rg2">—</span></div>
+        </div>
+        <div class="c18-verdict" id="c18rvrd">—</div>
+      </div>
     </div>
   </div>
 </div>
@@ -816,7 +976,7 @@ function runTab5(){readParams();t5BuildButtons();_drawTab5Charts(t5Speed);}
 // ─────────────────────────────────────────
 // TAB SWITCH
 // ─────────────────────────────────────────
-const RUNNERS=[null,runTab1,runTab2,runTab3,runTab4,runTab5];
+const RUNNERS=[null,runTab1,runTab2,runTab3,runTab4,runTab5,runTab6];
 function switchTab(idx){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
   document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
@@ -825,7 +985,379 @@ function switchTab(idx){
 }
 window.addEventListener('load',()=>{readParams();setReady('就绪 — 系统参数已加载，可切换标签页运行仿真并下载图片');});
 window.addEventListener('resize',()=>{const idx=[...document.querySelectorAll('.tab-panel')].findIndex(p=>p.classList.contains('active'));if(idx>0&&RUNNERS[idx])setTimeout(RUNNERS[idx],120);});
-document.addEventListener('contextmenu', e => e.preventDefault());
+
+// ════════════════════════════════════════════════════════
+//  案例18: 复数运算
+// ════════════════════════════════════════════════════════
+const cx={
+  n:v=>({r:+v,i:0}),
+  add:(a,b)=>({r:a.r+b.r,i:a.i+b.i}),
+  sub:(a,b)=>({r:a.r-b.r,i:a.i-b.i}),
+  mul:(a,b)=>({r:a.r*b.r-a.i*b.i,i:a.r*b.i+a.i*b.r}),
+  div:(a,b)=>{const d=b.r*b.r+b.i*b.i;if(!d)return{r:1e18,i:1e18};
+    return{r:(a.r*b.r+a.i*b.i)/d,i:(a.i*b.r-a.r*b.i)/d};},
+  sc:(a,k)=>({r:a.r*k,i:a.i*k}),
+  abs:a=>Math.sqrt(a.r*a.r+a.i*a.i),
+  arg:a=>Math.atan2(a.i,a.r)*180/Math.PI
+};
+
+// ════════════════════════════════════════════════════════
+//  案例18: 频率工具
+// ════════════════════════════════════════════════════════
+function logspace18(lo,hi,n){
+  const a=[];for(let i=0;i<n;i++)a.push(Math.pow(10,lo+(hi-lo)*i/(n-1)));return a;
+}
+const FREQS18=logspace18(-1,3,400);
+function unwraphase(ph){
+  const o=[ph[0]];
+  for(let i=1;i<ph.length;i++){
+    let d=ph[i]-o[i-1];
+    while(d>180)d-=360;while(d<-180)d+=360;o.push(o[i-1]+d);
+  }
+  return o;
+}
+
+// ════════════════════════════════════════════════════════
+//  案例18: 读取参数（复合v5 P对象）
+//  共用: P.m, P.Iz, P.a, P.b, P.k1(→K1), P.k2(→K2),
+//         P.iw(→G2), P.im(→G1), P.Jm, P.Bm, P.Kt(→Ka)
+//  专属: c18_Ks, c18_d, c18_K, c18_Jr, c18_Br, c18_V
+// ════════════════════════════════════════════════════════
+function getC18p(){
+  const gn=id=>parseFloat(document.getElementById(id).value)||0;
+  return{
+    m:P.m, Iz:P.Iz, a:P.a, b:P.b,
+    K1:P.k1*2, K2:P.k2*2,  // v5的k1/k2为单侧刚度，×2得前/后轴总侧偏刚度
+    G2:P.iw,
+    d:gn('c18_d'),
+    V:gn('c18_V')||10,
+    Ks:gn('c18_Ks')||93.4,
+    G1:P.im,
+    Jm:P.Jm,
+    Bm:P.Bm,
+    Ka:P.Kt,
+    K:gn('c18_K')||10,
+    Jr:gn('c18_Jr')||0.09,
+    Br:gn('c18_Br')||0.27
+  };
+}
+
+// ════════════════════════════════════════════════════════
+//  案例18: 任务二 — 路感传递函数
+// ════════════════════════════════════════════════════════
+function evalC18T2(p,omega){
+  const s={r:0,i:omega},s2=cx.mul(s,s);
+  const{G1,Ks,Jr,Jm,Br,Bm,K,Ka}=p;
+  const a2=Jr+Jm*G1*G1,a1=Br+Bm*G1*G1,a0=Ks+K*Ks*Ka*G1;
+  const den=cx.add(cx.add(cx.mul(cx.n(a2),s2),cx.mul(cx.n(a1),s)),cx.n(a0));
+  const sys=cx.div(cx.n(Ks),cx.add(den,cx.n(Ks)));
+  const m=cx.abs(sys);
+  return{mag:m>0?20*Math.log10(m):-300,phase:cx.arg(sys)};
+}
+
+// ════════════════════════════════════════════════════════
+//  案例18: 任务三 — 转向灵敏度传递函数
+// ════════════════════════════════════════════════════════
+function evalC18T3(p,omega){
+  const s={r:0,i:omega},s2=cx.mul(s,s);
+  const{m,a,b,V,K1,K2,G2,d,Iz,Jr,Jm,Br,Bm,Ka,G1,Ks,K}=p;
+  const X=cx.add(cx.mul(cx.n(-m*a*V*K1),s),cx.n((a+b)*K1*K2));
+  const M=Ks+G1*Ka*K*Ks;
+  const Z1=(a+b)*(a+b)/V*K1*K2+m*V*(a*K1-b*K2);
+  const Z=cx.add(cx.add(cx.mul(cx.n(m*V*Iz),s2),
+    cx.mul(cx.n(-(m*(a*a*K1+b*b*K2)+Iz*(K1+K2))),s)),cx.n(Z1));
+  const Y=cx.add(cx.mul(cx.n(-K1*Iz),s),cx.n(b*(a+b)/V*K1*K2+m*a*V*K1));
+  const Q=cx.sc(Z,G2*G2*V);
+  const Pdx=cx.sc(cx.add(cx.sub(cx.sc(Y,V),cx.sc(Z,V)),cx.sc(X,a)),K1*d);
+  const Nb=cx.add(cx.add(cx.mul(cx.n(Jr+Jm*G1*G1),s2),
+    cx.mul(cx.n(Br+Bm*G1*G1),s)),cx.n(Ks+G1*Ka*K*Ks));
+  const N=cx.add(Nb,cx.div(Pdx,Q));
+  const r=cx.div(cx.sc(X,M),cx.sc(cx.mul(Z,N),G2));
+  const sys=cx.div(r,cx.add(cx.n(1),r));
+  const mg=cx.abs(sys);
+  return{mag:mg>0?20*Math.log10(mg):-300,phase:cx.arg(sys)};
+}
+
+// ════════════════════════════════════════════════════════
+//  案例18: 子任务管理
+// ════════════════════════════════════════════════════════
+const SMETA18=[
+  {key:'G1 (im)',defs:[15,25,35]},
+  {key:'Jm',defs:[0.001,0.006,0.06]},
+  {key:'Ks',defs:[50,100,500]},
+  {key:'K',defs:[5,10,15]}
+];
+const C18SUB={t2:0,t3:0};
+const C18CACHE={};
+
+function selC18Sub(task,idx,btn){
+  const sgId=task==='t2'?'c18sg2':'c18sg3';
+  document.getElementById(sgId).querySelectorAll('.c18-var-btn')
+    .forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  C18SUB[task]=idx;
+  const m=SMETA18[idx];
+  document.getElementById('c18vt'+task.slice(1)).textContent='设置 '+m.key+' 的三条曲线取值：';
+  const prefix=task==='t2'?'c18v2_':'c18v3_';
+  document.getElementById(prefix+'1').value=m.defs[0];
+  document.getElementById(prefix+'2').value=m.defs[1];
+  document.getElementById(prefix+'3').value=m.defs[2];
+}
+
+function buildC18Curves(evalFn,sub,vals){
+  const mags=[],phases=[];
+  const gn=id=>parseFloat(document.getElementById(id).value)||0;
+  for(let ci=0;ci<3;ci++){
+    const ms=[],ps=[];
+    const p=getC18p();
+    if(sub===0)p.G1=vals[ci];
+    else if(sub===1)p.Jm=vals[ci];
+    else if(sub===2)p.Ks=vals[ci];
+    else p.K=vals[ci];
+    for(const w of FREQS18){const r=evalFn(p,w);ms.push(r.mag);ps.push(r.phase);}
+    mags.push(ms);phases.push(unwraphase(ps));
+  }
+  return{mags,phases};
+}
+
+// ════════════════════════════════════════════════════════
+//  案例18: 波德图绘制引擎（暗色屏幕 / 白底导出）
+// ════════════════════════════════════════════════════════
+function paintC18Bode(ctx,W,H,data,isLight){
+  const{freqs,mags:MA,phases:PA,labels,title}=data;
+  const BG   =isLight?'#ffffff':'#000000';
+  const PBG  =isLight?'#f4f8fd':'#060e18';
+  const GRID =isLight?'#ccdaec':'#1a2e45';
+  const ZERO =isLight?'#9ab8d8':'#1c3050';
+  const BDR  =isLight?'#3a5878':'#243d5a';
+  const TXT  =isLight?'#304860':'#6090b0';
+  const TBRT =isLight?'#102038':'#8faabb';
+  const CV   =isLight?['#1055c8','#c03800','#006428']:['#00ddff','#ff6a2f','#22cc66'];
+  const LBG  =isLight?'rgba(255,255,255,0.97)':'rgba(0,0,0,0.85)';
+  const LBDR =isLight?'#a8c4e0':'#1c3050';
+  const DASH =[[],[Math.round(W/100),Math.round(W/200)],[Math.round(W/250),Math.round(W/200)]];
+
+  const ML=Math.round(W*0.075),MR=Math.round(W*0.02),PW=W-ML-MR;
+  const titleH=Math.round(H*0.048),topGap=Math.round(H*0.01);
+  const midGap=Math.round(H*0.038),botMargin=Math.round(H*0.07);
+  const panH=Math.floor((H-titleH-topGap-midGap-botMargin)/2);
+  const MT=titleH+topGap,MB=MT+panH,PT=MB+midGap,PB=PT+panH;
+
+  ctx.fillStyle=BG;ctx.fillRect(0,0,W,H);
+  const tfs=Math.max(12,Math.round(W/60));
+  ctx.fillStyle=TBRT;ctx.font=`bold ${tfs}px "Microsoft YaHei",sans-serif`;
+  ctx.textAlign='center';ctx.fillText(title,W/2,Math.round(titleH*0.82));
+
+  const LMIN=Math.log10(freqs[0]),LMAX=Math.log10(freqs[freqs.length-1]);
+  const toX=f=>ML+(Math.log10(f)-LMIN)/(LMAX-LMIN)*PW;
+  const fM=MA.flat().filter(v=>isFinite(v)&&v>-290);
+  let mMin=fM.length?Math.floor(Math.min(...fM)/20)*20:-100;
+  let mMax=fM.length?Math.ceil((Math.max(...fM)+10)/10)*10:10;
+  if(mMax-mMin<20)mMax=mMin+40;
+  const toMY=v=>MT+(1-(Math.max(mMin,Math.min(mMax,v))-mMin)/(mMax-mMin))*panH;
+  const fP=PA.flat().filter(v=>isFinite(v));
+  let pMin=fP.length?Math.floor(Math.min(...fP)/45)*45-45:-270;
+  let pMax=fP.length?Math.ceil(Math.max(...fP)/45)*45+45:0;
+  if(pMax-pMin<90)pMax=pMin+180;
+  const toPY=v=>PT+(1-(Math.max(pMin,Math.min(pMax,v))-pMin)/(pMax-pMin))*panH;
+
+  function drawGrid(pT,pB,toY,ticks){
+    ctx.strokeStyle=GRID;ctx.lineWidth=1;
+    for(const t of ticks){const y=toY(t);if(y<pT-2||y>pB+2)continue;
+      ctx.beginPath();ctx.moveTo(ML,y);ctx.lineTo(W-MR,y);ctx.stroke();}
+    for(let dec=-1;dec<=3;dec++)for(let mu=1;mu<=9;mu++){
+      const f=mu*Math.pow(10,dec);
+      if(f<freqs[0]||f>freqs[freqs.length-1])continue;
+      const x=toX(f);ctx.beginPath();ctx.moveTo(x,pT);ctx.lineTo(x,pB);ctx.stroke();}
+    const y0=toY(0);
+    if(y0>=pT&&y0<=pB){ctx.strokeStyle=ZERO;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(ML,y0);ctx.lineTo(W-MR,y0);ctx.stroke();}
+  }
+  const mTicks=[],pTicks=[];
+  for(let v=mMin;v<=mMax;v+=20)mTicks.push(v);
+  for(let v=pMin;v<=pMax;v+=45)pTicks.push(v);
+  if(isLight){ctx.fillStyle=PBG;ctx.fillRect(ML,MT,PW,panH);ctx.fillRect(ML,PT,PW,panH);}
+  drawGrid(MT,MB,toMY,mTicks);drawGrid(PT,PB,toPY,pTicks);
+  ctx.strokeStyle=BDR;ctx.lineWidth=1.5;
+  ctx.strokeRect(ML,MT,PW,panH);ctx.strokeRect(ML,PT,PW,panH);
+
+  const sfs=Math.max(10,Math.round(W/88));
+  ctx.fillStyle=TXT;ctx.textAlign='left';ctx.font=`bold ${sfs}px "Microsoft YaHei",sans-serif`;
+  ctx.fillText('幅频特性 (dB)',ML+Math.round(PW*0.01),MT+sfs+Math.round(panH*0.04));
+  ctx.fillText('相频特性 (°)', ML+Math.round(PW*0.01),PT+sfs+Math.round(panH*0.04));
+
+  const yfs=Math.max(9,Math.round(W/105));
+  ctx.font=`${yfs}px Courier New`;ctx.textAlign='right';ctx.fillStyle=TXT;
+  for(const v of mTicks){const y=toMY(v);if(y<MT-4||y>MB+4)continue;ctx.fillText(v,ML-Math.round(W*0.005),y+Math.round(yfs*0.4));}
+  for(const v of pTicks){const y=toPY(v);if(y<PT-4||y>PB+4)continue;ctx.fillText(v,ML-Math.round(W*0.005),y+Math.round(yfs*0.4));}
+
+  const xfs=Math.max(9,Math.round(W/105));
+  ctx.font=`${xfs}px Courier New`;ctx.textAlign='center';ctx.fillStyle=TXT;
+  for(const f of[0.1,1,10,100,1000])ctx.fillText(f<1?'0.1':String(f),toX(f),PB+xfs+Math.round(H*0.01));
+  const axfs=Math.max(10,Math.round(W/90));
+  ctx.font=`${axfs}px "Microsoft YaHei",sans-serif`;ctx.fillStyle=TBRT;ctx.textAlign='center';
+  ctx.fillText('频率 / (rad/s)',W/2,H-Math.round(H*0.01));
+  const rot=(txt,cx2,cy)=>{ctx.save();ctx.translate(cx2,cy);ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center';ctx.fillStyle=TBRT;ctx.font=`${axfs}px "Microsoft YaHei",sans-serif`;
+    ctx.fillText(txt,0,0);ctx.restore();};
+  rot('幅值/dB',Math.round(W*0.016),MT+panH/2);
+  rot('相位/(°)',Math.round(W*0.016),PT+panH/2);
+
+  ctx.save();
+  for(let ci=0;ci<3;ci++){
+    ctx.strokeStyle=CV[ci];ctx.lineWidth=Math.max(1.5,W/400);ctx.setLineDash(DASH[ci]);
+    ctx.beginPath();let on=false;
+    for(let i=0;i<freqs.length;i++){const x=toX(freqs[i]),v=MA[ci][i];
+      if(!isFinite(v)){on=false;continue;}
+      const y=Math.max(MT,Math.min(MB,toMY(v)));on?ctx.lineTo(x,y):(ctx.moveTo(x,y),on=true);}
+    ctx.stroke();
+    ctx.beginPath();on=false;
+    for(let i=0;i<freqs.length;i++){const x=toX(freqs[i]),v=PA[ci][i];
+      if(!isFinite(v)){on=false;continue;}
+      const y=Math.max(PT,Math.min(PB,toPY(v)));on?ctx.lineTo(x,y):(ctx.moveTo(x,y),on=true);}
+    ctx.stroke();
+  }
+  ctx.restore();ctx.setLineDash([]);
+
+  const lfs=Math.max(9,Math.round(W/98)),ll=Math.round(W*0.045),ih=Math.round(lfs*2.6);
+  const LW=ll+Math.round(W*0.15)+6,LH=labels.length*ih+Math.round(ih*0.5);
+  const LX=W-MR-LW-4,LY=MT+Math.round(panH*0.06);
+  ctx.fillStyle=LBG;ctx.fillRect(LX-4,LY,LW+4,LH);
+  ctx.strokeStyle=LBDR;ctx.lineWidth=1;ctx.strokeRect(LX-4,LY,LW+4,LH);
+  for(let ci=0;ci<labels.length;ci++){
+    const ly=LY+ih*(ci+0.68);
+    ctx.strokeStyle=CV[ci];ctx.lineWidth=Math.max(1.5,W/380);ctx.setLineDash(DASH[ci]);
+    ctx.beginPath();ctx.moveTo(LX,ly);ctx.lineTo(LX+ll,ly);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=CV[ci];ctx.textAlign='left';ctx.font=`bold ${lfs}px Courier New`;
+    ctx.fillText(labels[ci],LX+ll+4,ly+Math.round(lfs*0.4));
+  }
+}
+
+function renderC18Bode(cvId,cwId,data){
+  const cv=document.getElementById(cvId),cw=document.getElementById(cwId);
+  const W=cw.clientWidth,H=cw.clientHeight;
+  if(W<10||H<10)return;
+  const DPR=Math.min(window.devicePixelRatio||1,2.5);
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  const ctx=cv.getContext('2d');ctx.scale(DPR,DPR);
+  paintC18Bode(ctx,W,H,data,false);
+}
+
+function dlC18Plot(taskId){
+  const data=C18CACHE[taskId];
+  if(!data){showToast('⚠ 请先点击「计算绘图」再下载');return;}
+  const EW=1600,EH=1200;
+  const oc=document.createElement('canvas');oc.width=EW;oc.height=EH;
+  paintC18Bode(oc.getContext('2d'),EW,EH,data,true);
+  const a=document.createElement('a');
+  a.download='EPS波德图_'+data.title.replace(/\s+/g,'_').replace(/[^\w\u4e00-\u9fa5_]/g,'')+'.png';
+  a.href=oc.toDataURL('image/png');a.click();
+  showToast('✅ 波德图已下载，可直接插入 Word');
+}
+
+// ════════════════════════════════════════════════════════
+//  案例18: 任务运行
+// ════════════════════════════════════════════════════════
+function doC18T2(){
+  readParams();
+  const sub=C18SUB.t2;
+  const vals=[
+    parseFloat(document.getElementById('c18v2_1').value)||0,
+    parseFloat(document.getElementById('c18v2_2').value)||0,
+    parseFloat(document.getElementById('c18v2_3').value)||0
+  ];
+  setBusy('计算路感波德图...');
+  setTimeout(()=>{
+    const{mags,phases}=buildC18Curves(evalC18T2,sub,vals);
+    const labels=vals.map(v=>SMETA18[sub].key+'='+v);
+    const title='转向路感 E(jω)  —  '+SMETA18[sub].key+' 变化';
+    C18CACHE.t2={freqs:FREQS18,mags,phases,labels,title};
+    renderC18Bode('c18cv2','c18cw2',C18CACHE.t2);
+    setReady('路感波德图完成 — 点击下载按钮保存图片');
+  },60);
+}
+
+function doC18T3(){
+  readParams();
+  const sub=C18SUB.t3;
+  const vals=[
+    parseFloat(document.getElementById('c18v3_1').value)||0,
+    parseFloat(document.getElementById('c18v3_2').value)||0,
+    parseFloat(document.getElementById('c18v3_3').value)||0
+  ];
+  setBusy('计算灵敏度波德图...');
+  setTimeout(()=>{
+    const{mags,phases}=buildC18Curves(evalC18T3,sub,vals);
+    const labels=vals.map(v=>SMETA18[sub].key+'='+v);
+    const title='转向灵敏度 r/θh(jω)  —  '+SMETA18[sub].key+' 变化';
+    C18CACHE.t3={freqs:FREQS18,mags,phases,labels,title};
+    renderC18Bode('c18cv3','c18cw3',C18CACHE.t3);
+    setReady('灵敏度波德图完成 — 点击下载按钮保存图片');
+  },60);
+}
+
+function doC18T4(){
+  readParams();
+  const p=getC18p();
+  const V=parseFloat(document.getElementById('c18t4V').value)||p.V;
+  const{m,Iz,a,b,K1,K2,G2,d,Ks,G1,Jm,Bm,Ka,K,Jr,Br}=p;
+  const A0=m*V*G2*Iz*(Jr+Jm*G1*G1);
+  const A11=m*V*Iz*(Br+Bm*G1*G1);
+  const A12=m*(K1*a*a+K2*b*b)+Iz*(K1+K2);
+  const A1=G2*(A11-A12*(Jr+Jm*G1*G1));
+  const A21=m*V*Iz*(K*G1*Ka*Ks+Ks);
+  const A22=(m*(K1*a*a+K2*b*b)+Iz*(K1+K2))*(Br+Bm*G1*G1);
+  const A23=((a+b)*(a+b)/V*K1*K2+m*V*(a*K1-b*K2))*(Jr+Jm*G1*G1);
+  const A2=G2*(A21-A22+A23)-K1*d*m*V*Iz/G2;
+  const A31=-(m*(K1*a*a+K2*b*b)+Iz*(K1+K2));
+  const A32=K*G1*Ka*Ks+Ks;
+  const A33=((a+b)*(a+b)/V*K1*K2+m*V*(a*K1-b*K2))*(Br+Bm*G1*G1);
+  const A3=G2*(A31*A32+A33)+K1*K2*d*(m*b*b+Iz)/G2;
+  const A41=((a+b)*(a+b)/V*K1*K2+m*V*(a*K1-b*K2))*(K*G1*Ka*Ks+Ks);
+  const A4=G2*A41+K1*K2*d*m*V*b/G2;
+  const g1=A1*A2-A0*A3,g2=A1*A2*A3-A0*A3*A3-A1*A1*A4;
+  const fmt=v=>{const av=Math.abs(v);return(av>1e7||(av<0.0001&&av>0))?v.toExponential(4):v.toFixed(3);};
+  ['A0','A1','A2','A3','A4'].forEach((k,i)=>
+    document.getElementById('c18r'+k).textContent=fmt([A0,A1,A2,A3,A4][i]));
+  const g1el=document.getElementById('c18rg1'),g2el=document.getElementById('c18rg2');
+  g1el.textContent=fmt(g1)+(g1>0?' > 0  ✓':'  ≤ 0  ✗');
+  g2el.textContent=fmt(g2)+(g2>0?' > 0  ✓':'  ≤ 0  ✗');
+  g1el.className='c18-rv '+(g1>0?'ok':'ng');
+  g2el.className='c18-rv '+(g2>0?'ok':'ng');
+  const ok=g1>0&&g2>0;
+  const vrd=document.getElementById('c18rvrd');
+  vrd.textContent=ok?'✓  系统稳定（劳斯判据）':'✗  系统不稳定（劳斯判据）';
+  vrd.className='c18-verdict '+(ok?'stable':'unstable');
+  document.getElementById('c18t4res').style.display='block';
+  setReady(ok?'稳定性分析完成 — 系统稳定':'稳定性分析完成 — 系统不稳定！');
+}
+
+// ════════════════════════════════════════════════════════
+//  案例18: 子标签切换
+// ════════════════════════════════════════════════════════
+function switchC18Tab(id,btn){
+  document.querySelectorAll('.c18-inner-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('c18TabBar').querySelectorAll('.c18-inner-tab')
+    .forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function runTab6(){
+  readParams();
+  setTimeout(()=>{
+    if(!C18CACHE.t2)doC18T2();
+    if(!C18CACHE.t3)doC18T3();
+  },100);
+}
+
+// 窗口resize时重绘案例18波德图
+const _origResize=window.onresize;
+window.addEventListener('resize',()=>{
+  if(C18CACHE.t2)setTimeout(()=>renderC18Bode('c18cv2','c18cw2',C18CACHE.t2),300);
+  if(C18CACHE.t3)setTimeout(()=>renderC18Bode('c18cv3','c18cw3',C18CACHE.t3),300);
+});
 document.addEventListener('keydown', e => {
 if (e.key === 'F12' || 
 (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
@@ -835,7 +1367,6 @@ e.preventDefault();
 return false;
 }
 });
-
 </script>
 <script>
   document.addEventListener('contextmenu', e => e.preventDefault());
@@ -849,6 +1380,5 @@ return false;
     }
   });
 </script>
-
 </body>
 </html>
